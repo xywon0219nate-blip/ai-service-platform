@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Path
-#from pydantic import BaseModel
+from fastapi import APIRouter, Path, HTTPException, status
+from pydantic import BaseModel
 from schemas.todo_schemas import Todo,TodoItem, TodoItems
 
 todo_router = APIRouter()
@@ -8,7 +8,7 @@ todo_router = APIRouter()
 class Todo(BaseModel):
    id: int
    item: str
-   
+
 
 # todo_list
 todo_list = []
@@ -37,9 +37,14 @@ async def getId(id: int) -> dict:
          return {
                "message": todo
          }
-   return {
-      "message": "id가 존재하지 않음!!"
-   }
+
+   raise HTTPException(
+      status_code=status.HTTP_404_NOT_FOUND,
+      detail="Todo with supplied ID doesn't exist",
+   )
+   # return {
+   #    "message": "id가 존재하지 않음!!"
+   # }
 
 
 # U
@@ -51,9 +56,14 @@ async def update_todo(todo_data: TodoItem, id: int = Path(...)) -> dict:
          return {
                "message": "todo 업데이트 성공!!"
          }
-   return {
-      "message": "id가 존재하지 않음!!"
-   }
+
+   raise HTTPException(
+      status_code=status.HTTP_404_NOT_FOUND,
+      detail="Todo with supplied ID doesn't exist",
+   )
+   # return {
+   #    "message": "id가 존재하지 않음!!"
+   # }
 
 # D
 # all
@@ -64,9 +74,13 @@ async def deleteAll() -> dict:
       return {
          "message": "todo_list 삭제 성공!!"
       }
-   return {
-      "message": "todo_list 데이터가 존재하지 않음"
-   }
+   raise HTTPException(
+         status_code=status.HTTP_404_NOT_FOUND,
+         detail="Todo with supplied ID doesn't exist",
+      )
+   # return {
+   #    "message": "todo_list 데이터가 존재하지 않음"
+   # }
 
 # id
 @todo_router.delete("/todo/{id}")
@@ -78,6 +92,10 @@ async def deleteId(id: int) -> dict:
          return {
                "message": "todo 삭제 완료!!"
          }
-   return {
-      "message": "id가 존재하지 않음!!"
-   }
+   raise HTTPException(
+         status_code=status.HTTP_404_NOT_FOUND,
+         detail="Todo with supplied ID doesn't exist",
+      )
+   # return {
+   #    "message": "id가 존재하지 않음!!"
+   # }
