@@ -13,97 +13,112 @@ todo_list = []
 
 # C: Insert 
 @todo_router.post("/todo", 
-                    response_model=Todo,
-                    status_code=status.HTTP_201_CREATED)
+                  response_model=Todo,
+                  status_code=status.HTTP_201_CREATED)
 async def add_todo(todo: TodoItem,
-                    db: Session = Depends(get_db)) -> dict:
-    todo_data = TodoModel(item=todo.item)
+                  db: Session = Depends(get_db)) -> dict:
+   todo_data = TodoModel(item=todo.item)
 
-    db.add(todo_data)
-    db.commit()
-    db.refresh(todo_data)
+   db.add(todo_data)
+   db.commit()
+   db.refresh(todo_data)
 
-    return todo_data    
+   return todo_data    
 
 
 # R : Select
 # all
 @todo_router.get("/todo", response_model=TodoItems)
 async def getAll(db: Session = Depends(get_db)) -> list[TodoItem]:
-    result = db.execute(
-        select(TodoModel).order_by(TodoModel.id)
-    )
-    todos = result.scalars().all()
+   result = db.execute(
+      select(TodoModel).order_by(TodoModel.id)
+   )
+   todos = result.scalars().all()
 
-    return { "todos": todos } # {"todos": [{"id":1, "item": "HTML"}, ...] }
+   return { "todos": todos } # [{"id":1, "item": "HTML"}, ...]
+
 
 
 # id
 @todo_router.get("/todo/{id}", response_model=Todo)
 async def getId(id: int,
-                db: Session=Depends(get_db)) -> dict:
-    todo = db.get(TodoModel, id) # -> select ~~
+               db: Session = Depends(get_db)) -> dict:
+   # for todo in todo_list:
+   #    if todo.id == id:
+   #       return {
+   #             "message": todo
+   #       }
+   
+   todo = db.get(TodoModel,id) 
 
-    if todo is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Todo with supplied ID doesn't exist",
-        )
+   if todo is None:
+      raise HTTPException(
+         status_code=status.HTTP_404_NOT_FOUND,
+         detail="Todo with supplied ID doesn't exist",
+      )
+   return todo
 
-    return todo
 
 
 # U
-@todo_router.put("/todo/{id}", response_model=Todo)
-async def update_todo(todo_data: TodoItem, 
-                        id: int = Path(...),
-                        db: Session=Depends(get_db)) -> dict:
-    todo = db.get(TodoModel, id) # ORM(SQL 생성) => DB(SQL 실행) => 결과 리턴
+@todo_router.put("/todo/{id}",response_model=Todo)
+async def update_todo(todo_data: TodoItem, id: int = Path(...),db: Session = Depends(get_db)) -> dict:
+   
+   # for todo in todo_list:
+   #    if todo.id == id:
+   #       todo.item = todo_data.item
+   #       return {
+   #             "message": "todo 업데이트 성공!!"
+   #       }
 
-    if todo is None:
-        raise HTTPException(
+   todo = db.get(TodoModel,id) #
+
+   if todo is None:
+      raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Todo with supplied ID doesn't exist",
-        )
+         )
 
-    todo.item = todo_data.item   # DB Old item => New item 교체
-    db.commit()  # update 실행 - update todos set item=? where id=?
-    db.refresh(todo) # update 실행 - update todos set item='JS' where id=1
+   Todo.item = todo_data.item
+   db.commit() # updata 실행
+   db.refresh(todo)
 
-    return todo
+   return todo
 
 
 # D
-# all - 전체 삭제
+# all
 @todo_router.delete("/todo")
-async def deleteAll(db: Session = Depends(get_db)) -> dict:
-    result = db.execute(
-        delete(TodoModel)
-    )
-    db.commit()
+async def deleteAll( db: Session = Depends(get_db)) -> dict:
+   result = db.execute()
 
-    if result.rowcount == 0:
-        return {
-            "message": "todos 테이블의 데이터가 존재하지 않음"
-        }
-    return {
-        "message": "전체 데이터 삭제 완료!!"
-    }
+   # if len(todo_list) > 0:
+   #    todo_list.clear()
+      return {
+         "message": "todo_list 삭제 성공!!"
+      }
+   return {
+      "message": "todo_list 데이터가 존재하지 않음"
+   }
+
+# id별 todo삭제
+@todo_router.delete("/todo/{id}", response_model=Todo)
+async def deleteId(id: int, db: Session = Depends(get_db)) -> dict:
+   # for index in range(len(todo_list)):
+   #    todo = todo_list[index]
+   #    if todo.id == id:
+   #       todo_list.pop(index)
 
 
-# id별 todo 삭제
-@todo_router.delete("/todo/{id}")
-async def deleteId(id: int,
-                    db: Session=Depends(get_db)) -> dict:
-    todo = db.get(TodoModel, id)
-    if todo is None:
-        raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Todo with supplied ID doesn't exist",
-            )
-    db.delete(todo)
-    db.commit()
+   todo = db.get(TodoModel,id)
+   if todo is None:
+      raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Todo with supplied ID doesn't exist",
+         )
+   db.delete(todo)
+   db.commit()
 
-    return {
-        "message": "todo 삭제 완료!!"
-    }
+   return {
+            "message": "todo 삭제 완료!!"
+      }
