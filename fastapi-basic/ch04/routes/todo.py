@@ -1,26 +1,43 @@
-from fastapi import APIRouter, Path, HTTPException, status
+from fastapi import APIRouter, Path, HTTPException, status, Depends
 from schemas.todo_schema import Todo, TodoItem, TodoItems
+
+from sqlalchemy import delete, select
+from sqlalchemy.orm import Session
+from database import get_db
+from models.todo_model import TodoModel
 
 todo_router = APIRouter()
 
 # todo_list
 todo_list = []
 
-# C
-@todo_router.post("/todo")
-async def add_todo(todo: Todo) -> dict:
-    todo_list.append(todo)
-    return {
-        "message": "Todo 객체 추가 완료!!"
-    }
+# C: Insert 
+@todo_router.post("/todo", 
+                    response_model=Todo,
+                    status_code=status.HTTP_201_CREATED)
+async def add_todo(todo: TodoItem,
+                    db: Session = Depends(get_db)) -> dict:
+    todo_data = TodoModel(item=todo.item)
 
-# R
+    db.add(todo_data)
+    db.commit()
+    db.refresh(todo_data)
+
+    return todo_data    
+
+
+# R : Select
 # all
 @todo_router.get("/todo", response_model=TodoItems)
-async def getAll() -> dict:
-    return {
-        "todos": todo_list
-    }
+async def getAll(db: Session = Depends(get_db)) -> list[TodoItem]:
+    result = db.execute(
+        select(TodoModel).order_by(TodoModel.id)
+    )
+    todos = result.scalars().all()
+
+    return { "todos": todos } # [{"id":1, "item": "HTML"}, ...]
+
+
 
 # id
 @todo_router.get("/todo/{id}")
@@ -34,9 +51,7 @@ async def getId(id: int) -> dict:
         status_code=status.HTTP_404_NOT_FOUND,
         detail="Todo with supplied ID doesn't exist",
     )
-    #return {
-    #    "message": "id가 존재하지 않음!!"
-    #}
+
 
 
 # U
